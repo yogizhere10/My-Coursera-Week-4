@@ -1,0 +1,92 @@
+My Reproducible Research Week 4 Assignment
+===========================================
+
+Impact of Severe Weather Events on Population Health and Property Damage
+========================================================================
+
+Synopsis:
+========
+
+This research investigates the impact of natural events on public and economic health. The data used is the National Weather Service Storm Data collection over 61 years (from 1950 untill 2011) which contains 902297 observations and 37 variables. The purpose of this report is to show which weather related event types have the most damaging impact. The first graph shows the top eight event types which lead to the most direct peronal injuries and the second graph shows the top eight event types which lead to most economic damage. Both graphs clearly show the Tornado event type as a leading cause in both personal injuries and economic damage, with other wind or water related (e.g. flooding, flash-flooding) event types a not so close second. This research suggests taking a further look into preventing wind and water related disasters as a measure with the highest ROI.
+
+Data Processing:
+===============
+
+```{r}
+calamity <- read.table("calamitydata.csv", sep = ",", header = TRUE)
+str(calamity)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+```
+
+
+Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+=========================================================================================================================================
+
+
+```{r}
+cal1 <- group_by(calamity, EVTYPE)
+cal1 <- summarize(cal1, sum_fatality = sum(FATALITIES, na.rm = TRUE), sum_injury = sum(INJURIES, na.tm = TRUE))
+cal1 <- arrange(cal1, desc(sum_fatality))
+head(cal1)
+cal2 <- cal1[1:12,]
+ggplot(data = cal2, aes(EVTYPE, sum_fatality)) + geom_bar(fill = "green", stat = "identity") + theme(axis.text.x = element_text(angle = 90, hjust = 1,size=8, color=2))
+```
+
+
+Across the United States, which types of events have the greatest economic consequences?
+========================================================================================
+
+
+```{r}
+cal3 <- select(calamity, EVTYPE, CROPDMG, CROPDMGEXP, PROPDMG, PROPDMGEXP)
+cal3 <- mutate(cal3, cropdamage = CROPDMG * case_when(
+  CROPDMGEXP == "B" ~ 10^9,
+  CROPDMGEXP == "k" | CROPDMGEXP == "K" ~ 10^3,
+  CROPDMGEXP == "m" | CROPDMGEXP == "M" ~ 10^6,
+  CROPDMGEXP == 2 ~ 2,
+  TRUE ~ 0
+))
+cal3 <- arrange(cal3, desc(cropdamage))
+head(cal3)
+cal3 <- mutate(cal3, propdamage = PROPDMG * case_when(
+  PROPDMGEXP == "B" | PROPDMGEXP == "b" ~ 10^9,
+  PROPDMGEXP == "H" | PROPDMGEXP == "h" ~ 10^2,
+  PROPDMGEXP == "k" | PROPDMGEXP == "K" ~ 10^3,
+  PROPDMGEXP == "m" | PROPDMGEXP == "M" ~ 10^6,
+  PROPDMGEXP == 0 ~ 0,
+  PROPDMGEXP == 1 ~ 1,
+  PROPDMGEXP == 2 ~ 2,
+  PROPDMGEXP == 3 ~ 3,
+  PROPDMGEXP == 4 ~ 4,
+  PROPDMGEXP == 5 ~ 5,
+  PROPDMGEXP == 6 ~ 6,
+  PROPDMGEXP == 7 ~ 7,
+  PROPDMGEXP == 8 ~ 8,
+  TRUE ~ 0
+))
+```
+
+```{r}
+cal3 <- arrange(cal3, desc(propdamage))
+head(cal3)
+cal4 <- select(cal3, EVTYPE, propdamage, cropdamage)
+cal4 <- arrange(cal4, desc(propdamage + cropdamage))
+head(cal4)
+cal5 <- cal4[1:10,]
+cal5
+x <- cal5$EVTYPE
+damage<- as.matrix(t(cal5[,-1]))
+colnames(damage)<-x
+par(mfrow = c(1,1))
+barplot(damage, col = c("green", "blue"), main = "Impact of Severe Weather Events on Economic Damage")
+legend("topright", c("Property","Crop"), fill = c("green", "blue"), bty = "x")
+```
+
+Results and Conclusions:
+=======================
+Tornado caused the maximum number of fatalities and injuries. It was followed by Excessive Heat for fatalities and Thunderstorm wind for injuries.
+
+Floods caused the maximum property damage where as Drought caused the maximum crop damage. Second major events that caused the maximum damage was Hurricanes/Typhoos for property damage and Floods for crop damage.library(knitr)
+> knit2html("My RR Assignment 2.Rmd")
